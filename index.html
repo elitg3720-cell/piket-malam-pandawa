@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIM-PIKET MALAM - Portal Absensi Petugas Jaga Malam</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- html2pdf library for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        night: {
+                            50: '#f0f4f8',
+                            100: '#d9e2ec',
+                            500: '#334e68',
+                            600: '#243b53',
+                            700: '#102a43',
+                            800: '#0b1d3a',
+                            900: '#061126',
+                        },
+                        amber: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white !important; color: black !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-amber-500 selection:text-slate-900">
+
+    <!-- HEADER -->
+    <header class="bg-night-800 text-white shadow-xl no-print border-b-2 border-amber-500/50 sticky top-0 z-40 backdrop-blur-md bg-night-800/90">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/30 flex items-center justify-center shadow-inner">
+                    <i class="fa-solid fa-moon text-2xl text-amber-400"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-base md:text-lg leading-tight tracking-wide text-white" id="header-instansi">PEMERINTAH DAERAH KABUPATEN SUMEDANG DINAS PENDIDIKAN</h1>
+                    <p class="text-xs text-amber-400 font-medium flex items-center gap-1.5 mt-0.5">
+                        <i class="fa-solid fa-shield-halved text-[10px]"></i>
+                        <span>Sistem Informasi Absensi Petugas Piket Malam (SIM-PIKET MALAM)</span>
+                    </p>
+                </div>
+            </div>
+            <div id="user-session-info" class="hidden flex items-center space-x-3">
+                <div class="text-right hidden sm:block">
+                    <p id="session-name" class="text-xs font-bold text-slate-100"></p>
+                    <p id="session-role" class="text-[10px] text-amber-400">Petugas Piket</p>
+                </div>
+                <button onclick="logout()" class="bg-red-600/80 hover:bg-red-600 text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5 shadow border border-red-500/40">
+                    <i class="fa-solid fa-right-from-bracket"></i><span>Keluar</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-6">
+
+        <!-- VIEW 1: LOGIN SELECTION -->
+        <div id="view-login" class="max-w-md mx-auto mt-6 md:mt-12">
+            <div class="bg-slate-800/90 rounded-3xl shadow-2xl overflow-hidden border border-slate-700/80 backdrop-blur-md">
+                <div class="bg-gradient-to-br from-night-900 via-night-800 to-slate-800 p-8 text-white text-center relative overflow-hidden border-b border-slate-700">
+                    <div class="w-16 h-16 bg-amber-500/10 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-amber-500/30 shadow-inner">
+                        <i class="fa-solid fa-user-shield text-3xl text-amber-400"></i>
+                    </div>
+                    <h2 class="text-2xl font-black tracking-tight text-white">Portal Piket Malam</h2>
+                    <p class="text-xs text-slate-400 mt-1">Silakan masuk sesuai dengan peran dan jadwal tugas Anda</p>
+                </div>
+
+                <div class="p-6">
+                    <div class="flex bg-slate-900/80 p-1.5 rounded-2xl mb-6 border border-slate-700/50">
+                        <button onclick="switchLoginTab('petugas')" id="tab-btn-petugas" class="flex-1 py-2.5 text-xs font-bold rounded-xl bg-amber-500 text-slate-900 shadow-md transition">Login Petugas</button>
+                        <button onclick="switchLoginTab('admin')" id="tab-btn-admin" class="flex-1 py-2.5 text-xs font-bold rounded-xl text-slate-400 hover:text-slate-200 transition">Login Admin</button>
+                    </div>
+
+                    <!-- Form Login Petugas Piket -->
+                    <div id="form-login-petugas" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Pilih Nama Petugas Piket</label>
+                            <select id="select-petugas-login" class="w-full px-4 py-3 rounded-xl border border-slate-700 focus:ring-2 focus:ring-amber-500 focus:outline-none bg-slate-900 text-slate-100 text-sm font-medium">
+                            </select>
+                        </div>
+                        <button onclick="loginAsPetugas()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-3.5 rounded-xl transition shadow-lg shadow-amber-500/20 flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-right-to-bracket"></i><span>Masuk Dashboard Piket</span>
+                        </button>
+                    </div>
+
+                    <!-- Form Login Admin -->
+                    <div id="form-login-admin" class="space-y-4 hidden">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Username Admin</label>
+                            <input type="text" id="admin-user" placeholder="Masukkan username admin" class="w-full px-4 py-3 rounded-xl border border-slate-700 focus:ring-2 focus:ring-amber-500 focus:outline-none bg-slate-900 text-slate-100 text-sm font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Password</label>
+                            <input type="password" id="admin-pass" placeholder="••••••••" class="w-full px-4 py-3 rounded-xl border border-slate-700 focus:ring-2 focus:ring-amber-500 focus:outline-none bg-slate-900 text-slate-100 text-sm font-medium">
+                        </div>
+                        <button onclick="loginAsAdmin()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3.5 rounded-xl transition shadow-lg flex items-center justify-center space-x-2 border border-slate-600">
+                            <i class="fa-solid fa-lock text-amber-400"></i><span>Masuk Panel Admin Piket</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 2: PETUGAS PIKET DASHBOARD -->
+        <div id="view-petugas" class="hidden space-y-6">
+            <div class="bg-gradient-to-r from-night-900 via-night-800 to-slate-800 rounded-3xl p-6 md:p-8 text-white shadow-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border border-slate-700/80 relative overflow-hidden">
+                <div class="relative z-10">
+                    <span class="bg-amber-500/20 text-amber-400 border border-amber-500/40 text-[11px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider inline-flex items-center gap-1.5">
+                        <i class="fa-solid fa-moon"></i> Shift Piket Malam
+                    </span>
+                    <h2 class="text-2xl md:text-3xl font-black mt-2 text-white" id="petugas-welcome-name">Selamat Malam, Petugas</h2>
+                    <p class="text-xs md:text-sm text-slate-300 mt-1">Sistem Absensi Jaga Malam. Catat kehadiran awal shift & selesai piket serta kondisi pos keamanan.</p>
+                </div>
+                <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto relative z-10">
+                    <button onclick="openAbsenModal('Masuk')" class="w-full sm:w-auto bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-6 py-3.5 rounded-xl shadow-lg shadow-amber-500/20 transition flex items-center justify-center space-x-2 transform active:scale-95">
+                        <i class="fa-solid fa-business-time text-xl"></i>
+                        <span>Absen Masuk Piket</span>
+                    </button>
+                    <button onclick="openAbsenModal('Pulang')" class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-6 py-3.5 rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center space-x-2 transform active:scale-95">
+                        <i class="fa-solid fa-flag-checkered text-xl"></i>
+                        <span>Absen Selesai Piket</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-slate-800/80 p-5 rounded-2xl shadow-sm border border-slate-700/70 flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-shield-check"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Hadir Tepat Waktu</p>
+                        <h3 class="text-2xl font-black text-white mt-0.5" id="stat-petugas-hadir">0</h3>
+                    </div>
+                </div>
+                <div class="bg-slate-800/80 p-5 rounded-2xl shadow-sm border border-slate-700/70 flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-clock font-bold"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Terlambat Shift</p>
+                        <h3 class="text-2xl font-black text-white mt-0.5" id="stat-petugas-terlambat">0</h3>
+                    </div>
+                </div>
+                <div class="bg-slate-800/80 p-5 rounded-2xl shadow-sm border border-slate-700/70 flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-user-clock"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Izin / Tukar Shift</p>
+                        <h3 class="text-2xl font-black text-white mt-0.5" id="stat-petugas-izin">0</h3>
+                    </div>
+                </div>
+                <div class="bg-slate-800/80 p-5 rounded-2xl shadow-sm border border-slate-700/70 flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-chart-pie"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Kedisiplinan Jaga</p>
+                        <h3 class="text-2xl font-black text-white mt-0.5" id="stat-petugas-persen">0%</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table Riwayat -->
+            <div class="bg-slate-800/80 rounded-2xl shadow-xl border border-slate-700/70 p-6">
+                <h3 class="text-base font-bold text-white mb-4 flex items-center space-x-2">
+                    <i class="fa-solid fa-clock-rotate-left text-amber-400"></i>
+                    <span>Riwayat Jaga Malam Anda</span>
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-700 text-slate-400 text-xs font-bold uppercase bg-slate-900/50">
+                                <th class="p-3 rounded-l-lg">Tanggal Jaga</th>
+                                <th class="p-3">Pos / Areal Jaga</th>
+                                <th class="p-3">Masuk Piket</th>
+                                <th class="p-3">Selesai Piket</th>
+                                <th class="p-3">Status</th>
+                                <th class="p-3 rounded-r-lg">Laporan / Catatan Pos</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-riwayat-petugas" class="divide-y divide-slate-700/50 font-medium text-slate-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 3: ADMIN DASHBOARD -->
+        <div id="view-admin" class="hidden space-y-6">
+            <div class="flex flex-wrap gap-2 border-b border-slate-700/70 pb-4 no-print">
+                <button onclick="switchAdminTab('rekap')" id="adm-tab-rekap" class="px-4 py-2.5 bg-amber-500 text-slate-950 rounded-xl font-black text-xs md:text-sm transition shadow-sm flex items-center space-x-2">
+                    <i class="fa-solid fa-table-list"></i><span>Rekap Laporan Piket Malam</span>
+                </button>
+                <button onclick="switchAdminTab('statistik')" id="adm-tab-statistik" class="px-4 py-2.5 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-xl font-bold text-xs md:text-sm transition border border-slate-700 flex items-center space-x-2">
+                    <i class="fa-solid fa-chart-column text-amber-400"></i><span>Statistik Kehadiran Petugas</span>
+                </button>
+                <button onclick="switchAdminTab('petugas')" id="adm-tab-petugas" class="px-4 py-2.5 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-xl font-bold text-xs md:text-sm transition border border-slate-700 flex items-center space-x-2">
+                    <i class="fa-solid fa-users-gear text-amber-400"></i><span>Kelola Data Petugas Piket</span>
+                </button>
+                <button onclick="switchAdminTab('kop')" id="adm-tab-kop" class="px-4 py-2.5 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-xl font-bold text-xs md:text-sm transition border border-slate-700 flex items-center space-x-2">
+                    <i class="fa-solid fa-sliders text-amber-400"></i><span>Pengaturan Jam Shift & Kop</span>
+                </button>
+            </div>
+
+            <!-- ADMIN SECTION: REKAPITULASI -->
+            <div id="admin-section-rekap" class="space-y-6">
+                <div class="bg-slate-800/90 rounded-2xl shadow-xl border border-slate-700/70 p-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 no-print">
+                        <div>
+                            <h3 class="text-lg font-bold text-white">Rekapitulasi Absensi Jaga Malam</h3>
+                            <p class="text-xs text-slate-400">Filter data kehadiran shift piket malam dan cetak dokumen resmi.</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2 items-center w-full md:w-auto">
+                            <input type="date" id="filter-tanggal-mulai" class="px-3 py-2 border rounded-xl text-xs font-semibold bg-slate-900 border-slate-700 text-slate-100">
+                            <span class="text-xs text-slate-400 font-bold">s/d</span>
+                            <input type="date" id="filter-tanggal-selesai" class="px-3 py-2 border rounded-xl text-xs font-semibold bg-slate-900 border-slate-700 text-slate-100">
+                            <button onclick="filterRekap()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-3.5 py-2 rounded-xl text-xs font-black transition">Filter</button>
+                            <button onclick="downloadPDF()" class="bg-red-600 hover:bg-red-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow">
+                                <i class="fa-solid fa-file-pdf"></i><span>Cetak PDF</span>
+                            </button>
+                            <button onclick="exportExcel()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow">
+                                <i class="fa-solid fa-file-excel"></i><span>Export Excel</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- PDF Print Area -->
+                    <div id="pdf-printable-area" class="bg-white text-slate-900 p-6 rounded-xl shadow-inner">
+                        <div id="print-letterhead" class="border-b-4 border-double border-slate-900 pb-4 mb-6">
+                            <div class="flex justify-between items-center mb-2">
+                                <div class="w-20 h-20 flex items-center justify-center">
+                                    <img id="kop-img-sekolah" src="" alt="Logo Instansi" class="max-h-20 max-w-20 object-contain hidden">
+                                </div>
+                                <div class="text-center flex-grow px-4">
+                                    <h2 id="kop-instansi" class="text-xs md:text-sm font-bold uppercase tracking-wide">PEMERINTAH DAERAH KABUPATEN SUMEDANG DINAS PENDIDIKAN</h2>
+                                    <h1 id="kop-sekolah" class="text-base md:text-xl font-black uppercase text-slate-900">SMP NEGERI 2 WADO</h1>
+                                    <p id="kop-alamat" class="text-[11px] text-slate-600 mt-0.5">Jalan Raya Wado-Malangbong Km 07 Kabupaten Sumedang</p>
+                                </div>
+                                <div class="w-20 h-20 flex items-center justify-center">
+                                    <img id="kop-img-tutwuri" src="" alt="Logo Samping" class="max-h-20 max-w-20 object-contain hidden">
+                                </div>
+                            </div>
+                            <h3 class="text-sm font-bold uppercase mt-4 tracking-wider text-slate-800 underline text-center">LAPORAN ABSENSI & MONITORING PETUGAS PIKET MALAM</h3>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-sm border border-slate-300">
+                                <thead>
+                                    <tr class="bg-slate-100 text-slate-800 text-xs font-bold uppercase border-b border-slate-300">
+                                        <th class="p-2.5 border border-slate-300 text-center">No</th>
+                                        <th class="p-2.5 border border-slate-300">Nama Petugas Piket</th>
+                                        <th class="p-2.5 border border-slate-300">Tanggal Jaga</th>
+                                        <th class="p-2.5 border border-slate-300">Pos Piket</th>
+                                        <th class="p-2.5 border border-slate-300">Masuk Shift</th>
+                                        <th class="p-2.5 border border-slate-300">Selesai Shift</th>
+                                        <th class="p-2.5 border border-slate-300">Status</th>
+                                        <th class="p-2.5 border border-slate-300">Laporan Security / Pos</th>
+                                        <th class="p-2.5 border border-slate-300 text-center no-print">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-admin-rekap" class="divide-y divide-slate-200">
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div id="print-signatures" class="mt-8 pt-4 grid grid-cols-2 text-center text-xs text-slate-800 font-medium">
+                            <div>
+                                <p>Mengetahui,</p>
+                                <p class="font-bold">Koordinator Keamanan / Piket</p>
+                                <div class="h-16"></div>
+                                <p id="print-nama-pengawas" class="font-bold underline">-</p>
+                                <p id="print-nip-pengawas">NIP. -</p>
+                            </div>
+                            <div>
+                                <p id="print-tanggal-laporan">Kab. Sumedang, -</p>
+                                <p class="font-bold">Kepala Instansi / Sekolah</p>
+                                <div class="h-16"></div>
+                                <p id="print-nama-kepsek" class="font-bold underline">-</p>
+                                <p id="print-nip-kepsek">NIP. -</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN SECTION: STATISTIK PETUGAS -->
+            <div id="admin-section-statistik" class="space-y-6 hidden">
+                <div class="bg-slate-800/90 rounded-2xl shadow-xl border border-slate-700/70 p-6">
+                    <h3 class="text-lg font-bold text-white mb-1">Statistik Kedisiplinan Petugas Piket Malam</h3>
+                    <p class="text-xs text-slate-400 mb-6">Klik nama petugas piket di bawah untuk melihat rekap riwayat piket individual.</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="md:col-span-1 border-r border-slate-700/80 pr-0 md:pr-4">
+                            <label class="block text-xs font-bold uppercase text-slate-400 mb-2 tracking-wider">Daftar Petugas Terdaftar</label>
+                            <div id="admin-list-petugas-stat" class="space-y-2 max-h-96 overflow-y-auto pr-2">
+                            </div>
+                        </div>
+                        <div class="md:col-span-2 bg-slate-900/60 p-6 rounded-2xl border border-slate-700/60 flex flex-col justify-between">
+                            <div id="admin-detail-stat-content">
+                                <div class="text-center py-16 text-slate-500">
+                                    <i class="fa-solid fa-chart-pie text-5xl mb-3 text-slate-600"></i>
+                                    <p class="text-sm font-medium">Pilih nama petugas piket pada daftar di sebelah kiri.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN SECTION: KELOLA PETUGAS -->
+            <div id="admin-section-petugas" class="space-y-6 hidden">
+                <div class="bg-slate-800/90 rounded-2xl shadow-xl border border-slate-700/70 p-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                        <div>
+                            <h3 class="text-lg font-bold text-white">Kelola Master Data Petugas Piket Malam</h3>
+                            <p class="text-xs text-slate-400">Tambah, sunting, atau hapus personil piket dari sistem.</p>
+                        </div>
+                        <button onclick="openAddPetugasModal()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2.5 rounded-xl text-xs font-black transition flex items-center space-x-2 shadow">
+                            <i class="fa-solid fa-user-plus"></i><span>Tambah Petugas Baru</span>
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-900/60 text-slate-400 text-xs font-bold uppercase border-b border-slate-700">
+                                    <th class="p-3">No</th>
+                                    <th class="p-3">Nama Petugas Piket</th>
+                                    <th class="p-3">ID / NIP Petugas</th>
+                                    <th class="p-3">Pos / Areal Utama</th>
+                                    <th class="p-3 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-admin-petugas" class="divide-y divide-slate-700/50 font-medium text-slate-200">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN SECTION: PENGATURAN SYSTEM -->
+            <div id="admin-section-kop" class="space-y-6 hidden">
+                <div class="bg-slate-800/90 rounded-2xl shadow-xl border border-slate-700/70 p-6 max-w-4xl">
+                    <div class="flex items-center space-x-3 mb-6 pb-4 border-b border-slate-700">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-lg font-bold">
+                            <i class="fa-solid fa-gears"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-white">Pengaturan Shift Piket Malam & Kop Laporan</h3>
+                            <p class="text-xs text-slate-400">Atur jam operasional shift piket malam, logo instansi, serta pejabat penandatangan.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <div class="border border-slate-700 p-4 rounded-2xl bg-slate-900/40 space-y-4">
+                            <h4 class="font-bold text-xs uppercase text-amber-400 tracking-wider flex items-center space-x-2">
+                                <i class="fa-solid fa-building-columns"></i><span>1. Identitas Instansi / Sekolah</span>
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Nama Instansi / Dinas</label>
+                                    <input type="text" id="input-kop-instansi" class="w-full px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-900 text-white text-xs font-medium focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Nama Unit Kerja / Pos Komando</label>
+                                    <input type="text" id="input-kop-sekolah" class="w-full px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-900 text-white text-xs font-medium focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Alamat Lengkap Pos / Instansi</label>
+                                <textarea id="input-kop-alamat" class="w-full px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-900 text-white text-xs font-medium focus:ring-2 focus:ring-amber-500 focus:outline-none" rows="2"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="border border-slate-700 p-4 rounded-2xl bg-slate-900/40 space-y-4">
+                            <h4 class="font-bold text-xs uppercase text-amber-400 tracking-wider flex items-center space-x-2">
+                                <i class="fa-solid fa-images"></i><span>2. Logo Kop Laporan PDF</span>
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="bg-slate-900 p-3 rounded-xl border border-slate-700">
+                                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Logo Utama (Kiri)</label>
+                                    <input type="file" id="input-logo-sekolah" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-200">
+                                    <div class="mt-3 flex items-center justify-between border-t border-slate-800 pt-2">
+                                        <div class="flex items-center space-x-2">
+                                            <img id="preview-logo-sekolah" src="" class="h-12 w-12 object-contain hidden border rounded p-1 bg-white" alt="Preview Logo">
+                                            <span class="text-[10px] text-slate-500">PNG/JPG</span>
+                                        </div>
+                                        <button onclick="removeLogo('sekolah')" id="btn-del-logo-sekolah" class="hidden text-red-400 hover:text-red-300 text-xs font-bold transition flex items-center space-x-1">
+                                            <i class="fa-solid fa-trash"></i><span>Hapus Logo</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="bg-slate-900 p-3 rounded-xl border border-slate-700">
+                                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Logo Samping (Kanan)</label>
+                                    <input type="file" id="input-logo-tutwuri" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-200">
+                                    <div class="mt-3 flex items-center justify-between border-t border-slate-800 pt-2">
+                                        <div class="flex items-center space-x-2">
+                                            <img id="preview-logo-tutwuri" src="" class="h-12 w-12 object-contain hidden border rounded p-1 bg-white" alt="Preview Samping">
+                                            <span class="text-[10px] text-slate-500">PNG/JPG</span>
+                                        </div>
+                                        <button onclick="removeLogo('tutwuri')" id="btn-del-logo-tutwuri" class="hidden text-red-400 hover:text-red-300 text-xs font-bold transition flex items-center space-x-1">
+                                            <i class="fa-solid fa-trash"></i><span>Hapus Logo</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border border-slate-700 p-4 rounded-2xl bg-slate-900/40 space-y-4">
+                            <h4 class="font-bold text-xs uppercase text-amber-400 tracking-wider flex items-center space-x-2">
+                                <i class="fa-solid fa-file-signature"></i><span>3. Pejabat Penandatangan Laporan PDF</span>
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Nama Kepala Instansi / Unit</label>
+                                    <input type="text" id="input-nama-kepsek" placeholder="Contoh: Dr. H. Ahmad Pauzi, M.Pd." class="w-full px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-900 text-white text-xs font-medium focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">NIP Kepala Instansi</label>
+                                    <input type="text" id="input-nip-kepsek" placeholder="Contoh: 19750101 200003 1 001" class="w-full px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-900 text-white text-xs font-medium focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Nama Koordinator Piket / Pembina</label>
+                                    <input type="text" id="input-nama-pengawas" placeholder="Contoh: Capt. Budiman, S.T." class="w-full px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-900 text-white text-xs font-medium focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">NIP / ID Koordinator Piket</label>
+                                    <input type="text" id="input-nip-pengawas" placeholder="Contoh: 19680512 199403 1 002" class="w-full px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-900 text-white text-xs font-medium focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border border-slate-700 p-4 rounded-2xl bg-slate-900/40 space-y-4">
+                            <h4 class="font-bold text-xs uppercase text-amber-400 tracking-wider flex items-center space-x-2">
+                                <i class="fa-solid fa-moon"></i><span>4. Konfigurasi Jam Shift Piket Malam</span>
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Jam Masuk Shift Piket</label>
+                                    <input type="time" id="input-jam-masuk" class="w-full px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-900 text-white text-xs font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Toleransi Masuk (Menit)</label>
+                                    <input type="number" id="input-toleransi" min="0" max="120" placeholder="15" class="w-full px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-900 text-white text-xs font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Jam Selesai Shift Piket</label>
+                                    <input type="time" id="input-jam-pulang" class="w-full px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-900 text-white text-xs font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onclick="saveKopSurat()" class="w-full md:w-auto bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-8 py-3.5 rounded-xl text-xs md:text-sm transition shadow-lg shadow-amber-500/20 flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-floppy-disk"></i><span>Simpan Seluruh Pengaturan Piket</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MODAL ABSENSI -->
+    <div id="modal-absen" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-slate-800 rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-700">
+            <div class="bg-gradient-to-r from-night-900 to-slate-800 text-white p-5 flex justify-between items-center border-b border-slate-700">
+                <h3 class="font-extrabold text-base flex items-center space-x-2">
+                    <i class="fa-solid fa-shield-halved text-amber-400"></i>
+                    <span id="modal-absen-title">Form Absensi Jaga Malam</span>
+                </h3>
+                <button onclick="closeAbsenModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-700 flex items-center space-x-3">
+                    <div class="text-amber-400 text-2xl font-bold"><i class="fa-solid fa-clock"></i></div>
+                    <div>
+                        <p class="text-xs text-slate-400 font-bold uppercase">Waktu Realtime</p>
+                        <h4 id="current-server-time" class="text-xl font-extrabold text-white">20:00:00 WIB</h4>
+                        <p class="text-[10px] text-slate-400 mt-0.5">Shift Masuk: <span id="display-batas-jam" class="font-bold text-amber-400">20:00 WIB</span> | Tol: <span id="display-toleransi" class="font-bold text-amber-400">15 Mnt</span> | Selesai: <span id="display-jam-pulang" class="font-bold text-emerald-400">06:00 WIB</span></p>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1.5">Pos / Areal Jaga Piket</label>
+                    <select id="absen-pos" class="w-full px-4 py-2.5 rounded-xl border border-slate-700 text-sm font-semibold bg-slate-900 text-white focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                        <option value="Pos Utama Seclusion">Pos Keamanan Utama / Gerbang</option>
+                        <option value="Gedung Utama & Kantor">Gedung Perkantoran / Utama</option>
+                        <option value="Areal Lab & Fasilitas">Areal Laboratorium & Fasilitas</option>
+                        <option value="Patroli Seluruh Area">Patroli Keliling Seluruh Pos</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1.5">Status Kehadiran</label>
+                    <select id="absen-status" onchange="toggleKeteranganField()" class="w-full px-4 py-2.5 rounded-xl border border-slate-700 text-sm font-semibold bg-slate-900 text-white focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                        <option value="Hadir">Hadir Siap Piket Malam</option>
+                        <option value="Izin">Izin Tidak Piket</option>
+                        <option value="Sakit">Sakit</option>
+                        <option value="Tukar Shift">Tukar Shift Piket</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1.5" id="label-keterangan">Laporan Kunjungan / Catatan Pos</label>
+                    <textarea id="absen-keterangan" placeholder="Kondisi pos aman, pagar terkunci, lampu menyala..." class="w-full px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-900 text-white text-sm font-medium focus:ring-2 focus:ring-amber-500 focus:outline-none" rows="2"></textarea>
+                </div>
+
+                <button onclick="submitAbsen()" id="btn-submit-absen" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-xl transition shadow-lg shadow-amber-500/20">Kirim Absensi Shift Piket</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL REAKSI -->
+    <div id="modal-reaksi" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-slate-800 rounded-3xl shadow-2xl max-w-md w-full overflow-hidden text-center p-8 border border-slate-700">
+            <div id="reaksi-icon-wrapper" class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl shadow-lg"></div>
+            <h3 id="reaksi-title" class="text-2xl font-bold text-white mb-2">Absensi Piket Recorded!</h3>
+            <p id="reaksi-message" class="text-sm text-slate-300 mb-6">Terima kasih atas laporan dan kewaspadaan Anda dalam menjaga area.</p>
+            <div id="reaksi-badge-container" class="mb-6"></div>
+            <button onclick="closeReaksiModal()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl transition border border-slate-600">Kembali ke Dashboard Piket</button>
+        </div>
+    </div>
+
+    <!-- MODAL TAMBAH PETUGAS PIKET -->
+    <div id="modal-tambah-petugas" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-slate-800 rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-700">
+            <div class="bg-gradient-to-r from-night-900 to-slate-800 text-white p-5 flex justify-between items-center border-b border-slate-700">
+                <h3 class="font-extrabold text-base">Tambah Data Petugas Piket Baru</h3>
+                <button onclick="closeAddPetugasModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Nama Lengkap Petugas</label>
+                    <input type="text" id="new-petugas-nama" placeholder="Contoh: Budi Santoso" class="w-full px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-900 text-white text-sm font-medium focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">NIP / ID Petugas Piket</label>
+                    <input type="text" id="new-petugas-nip" placeholder="Contoh: PKT-102938" class="w-full px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-900 text-white text-sm font-medium focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Pos Utama / Regu Piket</label>
+                    <input type="text" id="new-petugas-pos" placeholder="Contoh: Pos Gerbang Utama / Regu A" class="w-full px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-900 text-white text-sm font-medium focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                </div>
+                <button onclick="saveNewPetugas()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-xl transition shadow-lg shadow-amber-500/20">Simpan Data Petugas Piket</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL ALERT -->
+    <div id="modal-alert" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-slate-800 rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center border border-slate-700">
+            <div class="w-12 h-12 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-3 text-xl font-bold">
+                <i class="fa-solid fa-shield-cat"></i>
+            </div>
+            <h4 id="alert-title" class="text-lg font-bold text-white mb-1">Informasi Piket</h4>
+            <p id="alert-msg" class="text-xs text-slate-300 mb-5">Pesan sistem piket malam.</p>
+            <button onclick="closeAlertModal()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2.5 rounded-xl text-xs transition">Mengerti</button>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-night-900 border-t border-slate-800 py-4 mt-8 text-center text-xs text-slate-500 no-print">
+        <p>&copy; 2026 Sistem Informasi Absensi Petugas Piket Malam - Dinas Pendidikan KAB. SUMEDANG.</p>
+    </footer>
+
+    <script>
+        const STORAGE_KEY_PETUGAS = 'simpiket_petugas_list';
+        const STORAGE_KEY_ABSEN = 'simpiket_absen_data';
+        const STORAGE_KEY_KOP = 'simpiket_kop_surat';
+        const STORAGE_KEY_ADMINS = 'simpiket_admin_list';
+
+        const defaultPetugas = [
+            { id: 'p1', nama: 'BAMBANG HERMANTO, S.AP.', nip: '19850412 201101 1 004', pos: 'Pos Utama & Keliling' },
+            { id: 'p2', nama: 'SUPRIATNA', nip: 'PKT-2024-002', pos: 'Areal Laboratorium' },
+            { id: 'p3', nama: 'ACEP DEDEH', nip: 'PKT-2024-003', pos: 'Gedung Utama' }
+        ];
+
+        const defaultAbsen = [];
+
+        const defaultKop = {
+            instansi: 'PEMERINTAH DAERAH KABUPATEN SUMEDANG DINAS PENDIDIKAN',
+            sekolah: 'SMP NEGERI 2 WADO - POS PIKET MALAM',
+            alamat: 'Jalan Raya Wado-Malangbong Km 07 Kabupaten Sumedang',
+            logoSekolah: '',
+            logoTutwuri: '',
+            namaKepsek: 'RIRIN MULAYATI, S.Pd., M.Pd.',
+            nipKepsek: '19800123 200902 2 002',
+            namaPengawas: 'BAMBANG HERMANTO, S.AP.',
+            nipPengawas: '19850412 201101 1 004',
+            jamMasuk: '20:00',
+            toleransi: 20,
+            jamPulang: '06:00'
+        };
+
+        const defaultAdmins = [
+            { id: 'adm_1', nama: 'Komandan Piket Admin', username: 'admin', password: 'admin123' }
+        ];
+
+        if (!localStorage.getItem(STORAGE_KEY_PETUGAS)) localStorage.setItem(STORAGE_KEY_PETUGAS, JSON.stringify(defaultPetugas));
+        if (!localStorage.getItem(STORAGE_KEY_ABSEN)) localStorage.setItem(STORAGE_KEY_ABSEN, JSON.stringify(defaultAbsen));
+        if (!localStorage.getItem(STORAGE_KEY_KOP)) localStorage.setItem(STORAGE_KEY_KOP, JSON.stringify(defaultKop));
+        if (!localStorage.getItem(STORAGE_KEY_ADMINS)) localStorage.setItem(STORAGE_KEY_ADMINS, JSON.stringify(defaultAdmins));
+
+        let currentUser = null;
+        let currentAbsenType = 'Masuk';
+
+        window.onload = function() {
+            loadKopHeader();
+            updateLiveClock();
+            setInterval(updateLiveClock, 1000);
+            populateLoginPetugasDropdown();
+        };
+
+        function updateLiveClock() {
+            const now = new Date();
+            const timeString = now.toTimeString().split(' ')[0] + ' WIB';
+            const el = document.getElementById('current-server-time');
+            if (el) el.innerText = timeString;
+        }
+
+        function loadKopHeader() {
+            const kop = JSON.parse(localStorage.getItem(STORAGE_KEY_KOP)) || defaultKop;
+            document.getElementById('header-instansi').innerText = kop.instansi;
+            document.getElementById('kop-instansi').innerText = kop.instansi;
+            document.getElementById('kop-sekolah').innerText = kop.sekolah;
+            document.getElementById('kop-alamat').innerText = kop.alamat;
+            
+            document.getElementById('input-kop-instansi').value = kop.instansi;
+            document.getElementById('input-kop-sekolah').value = kop.sekolah;
+            document.getElementById('input-kop-alamat').value = kop.alamat;
+            document.getElementById('input-nama-kepsek').value = kop.namaKepsek || '';
+            document.getElementById('input-nip-kepsek').value = kop.nipKepsek || '';
+            document.getElementById('input-nama-pengawas').value = kop.namaPengawas || '';
+            document.getElementById('input-nip-pengawas').value = kop.nipPengawas || '';
+            document.getElementById('input-jam-masuk').value = kop.jamMasuk || '20:00';
+            document.getElementById('input-toleransi').value = kop.toleransi !== undefined ? kop.toleransi : 20;
+            document.getElementById('input-jam-pulang').value = kop.jamPulang || '06:00';
+
+            document.getElementById('display-batas-jam').innerText = (kop.jamMasuk || '20:00') + ' WIB';
+            document.getElementById('display-toleransi').innerText = (kop.toleransi !== undefined ? kop.toleransi : 20) + ' Mnt';
+            document.getElementById('display-jam-pulang').innerText = (kop.jamPulang || '06:00') + ' WIB';
+
+            document.getElementById('print-nama-kepsek').innerText = kop.namaKepsek || '-';
+            document.getElementById('print-nip-kepsek').innerText = 'NIP. ' + (kop.nipKepsek || '-');
+            document.getElementById('print-nama-pengawas').innerText = kop.namaPengawas || '-';
+            document.getElementById('print-nip-pengawas').innerText = 'NIP/ID. ' + (kop.nipPengawas || '-');
+            
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('print-tanggal-laporan').innerText = 'Kab. Sumedang, ' + dateStr;
+
+            const imgSekolah = document.getElementById('kop-img-sekolah');
+            const previewSekolah = document.getElementById('preview-logo-sekolah');
+            const btnDelSekolah = document.getElementById('btn-del-logo-sekolah');
+
+            if (kop.logoSekolah) {
+                imgSekolah.src = kop.logoSekolah;
+                imgSekolah.classList.remove('hidden');
+                previewSekolah.src = kop.logoSekolah;
+                previewSekolah.classList.remove('hidden');
+                btnDelSekolah.classList.remove('hidden');
+            } else {
+                imgSekolah.classList.add('hidden');
+                previewSekolah.classList.add('hidden');
+                btnDelSekolah.classList.add('hidden');
+            }
+
+            const imgTutwuri = document.getElementById('kop-img-tutwuri');
+            const previewTutwuri = document.getElementById('preview-logo-tutwuri');
+            const btnDelTutwuri = document.getElementById('btn-del-logo-tutwuri');
+
+            if (kop.logoTutwuri) {
+                imgTutwuri.src = kop.logoTutwuri;
+                imgTutwuri.classList.remove('hidden');
+                previewTutwuri.src = kop.logoTutwuri;
+                previewTutwuri.classList.remove('hidden');
+                btnDelTutwuri.classList.remove('hidden');
+            } else {
+                imgTutwuri.classList.add('hidden');
+                previewTutwuri.classList.add('hidden');
+                btnDelTutwuri.classList.add('hidden');
+            }
+        }
+
+        function populateLoginPetugasDropdown() {
+            const list = JSON.parse(localStorage.getItem(STORAGE_KEY_PETUGAS)) || [];
+            const select = document.getElementById('select-petugas-login');
+            select.innerHTML = '<option value="">-- Pilih Nama Petugas Piket --</option>';
+            list.forEach(p => {
+                select.innerHTML += `<option value="${p.id}">${p.nama} - [${p.pos}]</option>`;
+            });
+        }
+
+        function switchLoginTab(type) {
+            const btnPetugas = document.getElementById('tab-btn-petugas');
+            const btnAdmin = document.getElementById('tab-btn-admin');
+            const formPetugas = document.getElementById('form-login-petugas');
+            const formAdmin = document.getElementById('form-login-admin');
+
+            if (type === 'petugas') {
+                btnPetugas.className = "flex-1 py-2.5 text-xs font-bold rounded-xl bg-amber-500 text-slate-900 shadow-md transition";
+                btnAdmin.className = "flex-1 py-2.5 text-xs font-bold rounded-xl text-slate-400 hover:text-slate-200 transition";
+                formPetugas.classList.remove('hidden');
+                formAdmin.classList.add('hidden');
+            } else {
+                btnAdmin.className = "flex-1 py-2.5 text-xs font-bold rounded-xl bg-amber-500 text-slate-900 shadow-md transition";
+                btnPetugas.className = "flex-1 py-2.5 text-xs font-bold rounded-xl text-slate-400 hover:text-slate-200 transition";
+                formAdmin.classList.remove('hidden');
+                formPetugas.classList.add('hidden');
+            }
+        }
+
+        function loginAsPetugas() {
+            const id = document.getElementById('select-petugas-login').value;
+            if (!id) {
+                showAlert('Peringatan', 'Silakan pilih nama petugas piket dari daftar.');
+                return;
+            }
+            const list = JSON.parse(localStorage.getItem(STORAGE_KEY_PETUGAS)) || [];
+            const petugas = list.find(p => String(p.id) === String(id));
+            currentUser = { type: 'petugas', data: petugas };
+
+            document.getElementById('view-login').classList.add('hidden');
+            document.getElementById('view-petugas').classList.remove('hidden');
+            document.getElementById('user-session-info').classList.remove('hidden');
+            document.getElementById('session-name').innerText = petugas.nama;
+            document.getElementById('petugas-welcome-name').innerText = `Selamat Malam, ${petugas.nama}`;
+
+            renderPetugasDashboard();
+        }
+
+        function loginAsAdmin() {
+            const u = document.getElementById('admin-user').value.trim();
+            const p = document.getElementById('admin-pass').value.trim();
+
+            const adminList = JSON.parse(localStorage.getItem(STORAGE_KEY_ADMINS)) || [];
+            const matchedAdmin = adminList.find(a => a.username === u && a.password === p);
+
+            if (matchedAdmin) {
+                currentUser = { type: 'admin', data: matchedAdmin };
+                document.getElementById('view-login').classList.add('hidden');
+                document.getElementById('view-admin').classList.remove('hidden');
+                document.getElementById('user-session-info').classList.remove('hidden');
+                document.getElementById('session-name').innerText = matchedAdmin.nama;
+                document.getElementById('session-role').innerText = 'Komandan Admin Piket';
+
+                renderAdminRekap();
+                renderAdminPetugasList();
+                renderAdminStatList();
+            } else {
+                showAlert('Login Gagal', 'Username atau password admin piket salah.');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('view-login').classList.remove('hidden');
+            document.getElementById('view-petugas').classList.add('hidden');
+            document.getElementById('view-admin').classList.add('hidden');
+            document.getElementById('user-session-info').classList.add('hidden');
+            document.getElementById('admin-user').value = '';
+            document.getElementById('admin-pass').value = '';
+        }
+
+        function renderPetugasDashboard() {
+            const petugasId = currentUser.data.id;
+            const absenList = JSON.parse(localStorage.getItem(STORAGE_KEY_ABSEN)) || [];
+            const myAbsen = absenList.filter(a => String(a.petugasId) === String(petugasId));
+
+            let hadirCount = 0;
+            let terlambatCount = 0;
+            let izinCount = 0;
+
+            const tbody = document.getElementById('table-riwayat-petugas');
+            tbody.innerHTML = '';
+
+            if (myAbsen.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">Belum ada catatan piket malam Anda.</td></tr>`;
+            } else {
+                myAbsen.sort((a,b) => new Date(b.tanggal + ' ' + b.waktu) - new Date(a.tanggal + ' ' + a.waktu)).forEach(a => {
+                    if (a.status === 'Hadir') {
+                        if (a.keterangan && a.keterangan.includes('Terlambat')) terlambatCount++;
+                        else hadirCount++;
+                    } else {
+                        izinCount++;
+                    }
+
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-700/30">
+                            <td class="p-3 font-semibold text-white">${a.tanggal}</td>
+                            <td class="p-3 text-amber-400 font-semibold">${a.pos || '-'}</td>
+                            <td class="p-3 font-mono">${a.waktu || '-'}</td>
+                            <td class="p-3 font-mono text-emerald-400 font-semibold">${a.waktuPulang || '-'}</td>
+                            <td class="p-3"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${a.status === 'Hadir' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}">${a.status}</span></td>
+                            <td class="p-3 text-slate-300">${a.keterangan || '-'}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            const totalAbsen = myAbsen.length;
+            const persen = totalAbsen > 0 ? Math.round(((hadirCount + terlambatCount) / totalAbsen) * 100) : 0;
+
+            document.getElementById('stat-petugas-hadir').innerText = hadirCount;
+            document.getElementById('stat-petugas-terlambat').innerText = terlambatCount;
+            document.getElementById('stat-petugas-izin').innerText = izinCount;
+            document.getElementById('stat-petugas-persen').innerText = persen + '%';
+        }
+
+        function openAbsenModal(tipe = 'Masuk') {
+            currentAbsenType = tipe;
+            document.getElementById('modal-absen-title').innerText = tipe === 'Pulang' ? 'Form Selesai Shift Piket Malam' : 'Form Absensi Masuk Piket Malam';
+            document.getElementById('btn-submit-absen').innerText = tipe === 'Pulang' ? 'Kirim Laporan Selesai Piket' : 'Kirim Laporan Absen Shift Piket';
+            
+            const selectStatus = document.getElementById('absen-status');
+            if (tipe === 'Pulang') {
+                selectStatus.value = 'Hadir';
+                selectStatus.disabled = true;
+            } else {
+                selectStatus.disabled = false;
+            }
+            toggleKeteranganField();
+
+            document.getElementById('modal-absen').classList.remove('hidden');
+        }
+
+        function closeAbsenModal() {
+            document.getElementById('modal-absen').classList.add('hidden');
+        }
+
+        function toggleKeteranganField() {
+            const status = document.getElementById('absen-status').value;
+            const label = document.getElementById('label-keterangan');
+            if (status !== 'Hadir') {
+                label.innerText = 'Alasan Izin / Sakit / Tukar Shift';
+            } else {
+                label.innerText = 'Laporan Kunjungan / Catatan Keamanan Pos';
+            }
+        }
+
+        function submitAbsen() {
+            const pos = document.getElementById('absen-pos').value;
+            const status = document.getElementById('absen-status').value;
+            let keterangan = document.getElementById('absen-keterangan').value.trim();
+            
+            const kop = JSON.parse(localStorage.getItem(STORAGE_KEY_KOP)) || defaultKop;
+            const targetJamMasuk = kop.jamMasuk || '20:00';
+            const toleransi = parseInt(kop.toleransi !== undefined ? kop.toleransi : 20, 10);
+
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+            const timeStr = `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+            const dateStr = now.toISOString().split('T')[0];
+
+            const currentTotalMin = hours * 60 + minutes;
+            const absenList = JSON.parse(localStorage.getItem(STORAGE_KEY_ABSEN)) || [];
+            let record = absenList.find(a => String(a.petugasId) === String(currentUser.data.id) && a.tanggal === dateStr);
+
+            if (currentAbsenType === 'Masuk') {
+                if (record) {
+                    closeAbsenModal();
+                    showAlert('Informasi Piket', 'Anda telah mencatat absensi masuk piket untuk tanggal shift hari ini.');
+                    return;
+                }
+
+                const [sHour, sMin] = targetJamMasuk.split(':').map(Number);
+                const standardTotalMin = sHour * 60 + sMin;
+                const batasToleransiMin = standardTotalMin + toleransi;
+
+                if (status === 'Hadir') {
+                    let latePrefix = '';
+                    if (currentTotalMin > batasToleransiMin) {
+                        const diffMin = currentTotalMin - standardTotalMin;
+                        latePrefix = `Terlambat (${diffMin} mnt) - `;
+                    } else if (currentTotalMin > standardTotalMin) {
+                        latePrefix = `Tepat Waktu (Tol. ${currentTotalMin - standardTotalMin} mnt) - `;
+                    } else {
+                        latePrefix = `Tepat Waktu - `;
+                    }
+                    keterangan = latePrefix + (keterangan || 'Kondisi Pos Aman');
+                }
+
+                const newRecord = {
+                    id: 'a_' + Date.now(),
+                    petugasId: currentUser.data.id,
+                    tanggal: dateStr,
+                    pos: pos,
+                    waktu: timeStr,
+                    waktuPulang: '-',
+                    status: status,
+                    keterangan: keterangan
+                };
+
+                // SIMPAN LANGSUNG KE FIREBASE
+                if (window.db && window.dbRef && window.dbSet) {
+                    window.dbSet(window.dbRef(window.db, 'absensi/' + newRecord.id), newRecord)
+                        .then(() => console.log('Absensi masuk tersimpan ke Firebase'))
+                        .catch(err => console.error('Gagal simpan ke Firebase:', err));
+                }
+
+                closeAbsenModal();
+                showReaksiModal('Masuk', status, keterangan);
+
+            } else if (currentAbsenType === 'Pulang') {
+                if (!record) {
+                    closeAbsenModal();
+                    showAlert('Peringatan', 'Anda belum mencatat absensi masuk shift piket untuk hari ini!');
+                    return;
+                }
+
+                if (record.waktuPulang && record.waktuPulang !== '-') {
+                    closeAbsenModal();
+                    showAlert('Informasi Piket', 'Anda sudah menyelesaikan shift piket dan mengisi absen pulang.');
+                    return;
+                }
+
+                record.waktuPulang = timeStr;
+                if (keterangan) {
+                    record.keterangan += ` | Catatan Akhir Shift: ${keterangan}`;
+                }
+
+                // UPDATE LANGSUNG KE FIREBASE
+                if (window.db && window.dbRef && window.dbSet) {
+                    window.dbSet(window.dbRef(window.db, 'absensi/' + record.id), record)
+                        .then(() => console.log('Absensi pulang tersimpan ke Firebase'))
+                        .catch(err => console.error('Gagal update ke Firebase:', err));
+                }
+
+                closeAbsenModal();
+                showReaksiModal('Pulang', 'Hadir', 'Selesai Shift Piket Malam.');
+            }
+        }
+
+        function showReaksiModal(tipe, status, ket) {
+            const modal = document.getElementById('modal-reaksi');
+            const iconWrapper = document.getElementById('reaksi-icon-wrapper');
+            const title = document.getElementById('reaksi-title');
+            const msg = document.getElementById('reaksi-message');
+            const badgeContainer = document.getElementById('reaksi-badge-container');
+
+            modal.classList.remove('hidden');
+
+            if (tipe === 'Masuk') {
+                if (status === 'Hadir' && ket.includes('Terlambat')) {
+                    iconWrapper.className = "w-20 h-20 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto mb-4 text-3xl shadow-lg border border-amber-500/30";
+                    iconWrapper.innerHTML = `<i class="fa-solid fa-clock"></i>`;
+                    title.innerText = "Masuk Shift Terlambat!";
+                    msg.innerText = "Anda tercatat masuk shift piket melewati jam batas operasional.";
+                    badgeContainer.innerHTML = `<span class="bg-amber-500/20 text-amber-300 text-xs font-bold px-4 py-2 rounded-xl border border-amber-500/40 inline-block">${ket}</span>`;
+                } else if (status === 'Hadir') {
+                    iconWrapper.className = "w-20 h-20 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-4 text-3xl shadow-lg border border-emerald-500/30";
+                    iconWrapper.innerHTML = `<i class="fa-solid fa-shield-check"></i>`;
+                    title.innerText = "Siap Bertugas Piket Malam!";
+                    msg.innerText = "Absensi masuk shift berhasil. Selamat bertugas & utamakan keselamatan pos.";
+                    badgeContainer.innerHTML = `<span class="bg-emerald-500/20 text-emerald-300 text-xs font-bold px-4 py-2 rounded-xl border border-emerald-500/40 inline-block">${ket}</span>`;
+                } else {
+                    iconWrapper.className = "w-20 h-20 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center mx-auto mb-4 text-3xl shadow-lg border border-blue-500/30";
+                    iconWrapper.innerHTML = `<i class="fa-solid fa-clipboard-user"></i>`;
+                    title.innerText = "Pengajuan Izin/Shift Terekam";
+                    msg.innerText = "Status perizinan atau tukar shift telah disimpan dalam sistem.";
+                    badgeContainer.innerHTML = `<span class="bg-blue-500/20 text-blue-300 text-xs font-bold px-4 py-2 rounded-xl border border-blue-500/40 inline-block">Catatan: ${ket}</span>`;
+                }
+            } else {
+                iconWrapper.className = "w-20 h-20 rounded-full bg-teal-500/20 text-teal-400 flex items-center justify-center mx-auto mb-4 text-3xl shadow-lg border border-teal-500/30";
+                iconWrapper.innerHTML = `<i class="fa-solid fa-flag-checkered"></i>`;
+                title.innerText = "Shift Piket Selesai!";
+                msg.innerText = "Terima kasih atas penugasan dan jagaan malam Anda. Hati-hati di jalan pulang!";
+                badgeContainer.innerHTML = `<span class="bg-teal-500/20 text-teal-300 text-xs font-bold px-4 py-2 rounded-xl border border-teal-500/40 inline-block">${ket}</span>`;
+            }
+        }
+
+        function closeReaksiModal() {
+            document.getElementById('modal-reaksi').classList.add('hidden');
+        }
+
+        function switchAdminTab(tabName) {
+            const tabs = ['rekap', 'statistik', 'petugas', 'kop'];
+            tabs.forEach(t => {
+                document.getElementById(`admin-section-${t}`).classList.add('hidden');
+                document.getElementById(`adm-tab-${t}`).className = "px-4 py-2.5 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-xl font-bold text-xs md:text-sm transition border border-slate-700 flex items-center space-x-2";
+            });
+
+            document.getElementById(`admin-section-${tabName}`).classList.remove('hidden');
+            document.getElementById(`adm-tab-${tabName}`).className = "px-4 py-2.5 bg-amber-500 text-slate-950 rounded-xl font-black text-xs md:text-sm transition shadow-sm flex items-center space-x-2";
+
+            if (tabName === 'statistik') renderAdminStatList();
+            if (tabName === 'petugas') renderAdminPetugasList();
+            if (tabName === 'rekap') renderAdminRekap();
+        }
+
+        function renderAdminRekap() {
+            const petugasList = JSON.parse(localStorage.getItem(STORAGE_KEY_PETUGAS)) || [];
+            const absenList = JSON.parse(localStorage.getItem(STORAGE_KEY_ABSEN)) || [];
+            const tbody = document.getElementById('table-admin-rekap');
+            tbody.innerHTML = '';
+
+            let no = 1;
+            absenList.forEach(a => {
+                const p = petugasList.find(x => String(x.id) === String(a.petugasId));
+                const namaPetugas = p ? p.nama : (a.nama || '-');
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-2.5 border border-slate-300 text-center font-bold text-xs">${no++}</td>
+                        <td class="p-2.5 border border-slate-300 font-bold text-slate-800 text-xs">${namaPetugas}</td>
+                        <td class="p-2.5 border border-slate-300 text-xs">${a.tanggal}</td>
+                        <td class="p-2.5 border border-slate-300 text-xs font-medium text-amber-700">${a.pos || 'Pos Utama'}</td>
+                        <td class="p-2.5 border border-slate-300 text-xs font-mono">${a.waktu || '-'}</td>
+                        <td class="p-2.5 border border-slate-300 text-xs font-mono text-emerald-700 font-semibold">${a.waktuPulang || '-'}</td>
+                        <td class="p-2.5 border border-slate-300 text-xs"><span class="px-2 py-0.5 rounded text-[11px] font-bold ${a.status === 'Hadir' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}">${a.status}</span></td>
+                        <td class="p-2.5 border border-slate-300 text-xs text-slate-600">${a.keterangan || '-'}</td>
+                        <td class="p-2.5 border border-slate-300 text-center no-print">
+                            <button onclick="deleteAbsenRecord('${a.id}')" class="bg-red-50 hover:bg-red-100 text-red-600 p-1.5 rounded-lg transition" title="Hapus Record">
+                                <i class="fa-solid fa-trash text-xs"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            if (no === 1) {
+                tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-400 text-xs">Belum ada data absensi piket malam.</td></tr>`;
+            }
+        }
+
+        function filterRekap() {
+            const start = document.getElementById('filter-tanggal-mulai').value;
+            const end = document.getElementById('filter-tanggal-selesai').value;
+            if (!start || !end) {
+                showAlert('Informasi', 'Silakan pilih rentang tanggal mulai dan selesai.');
+                return;
+            }
+
+            const petugasList = JSON.parse(localStorage.getItem(STORAGE_KEY_PETUGAS)) || [];
+            const absenList = JSON.parse(localStorage.getItem(STORAGE_KEY_ABSEN)) || [];
+            const tbody = document.getElementById('table-admin-rekap');
+            tbody.innerHTML = '';
+
+            let no = 1;
+            const filtered = absenList.filter(a => a.tanggal >= start && a.tanggal <= end);
+            filtered.forEach(a => {
+                const p = petugasList.find(x => String(x.id) === String(a.petugasId));
+                const namaPetugas = p ? p.nama : (a.nama || '-');
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-2.5 border border-slate-300 text-center font-bold text-xs">${no++}</td>
+                        <td class="p-2.5 border border-slate-300 font-bold text-slate-800 text-xs">${namaPetugas}</td>
+                        <td class="p-2.5 border border-slate-300 text-xs">${a.tanggal}</td>
+                        <td class="p-2.5 border border-slate-300 text-xs font-medium text-amber-700">${a.pos || 'Pos Utama'}</td>
+                        <td class="p-2.5 border border-slate-300 text-xs font-mono">${a.waktu || '-'}</td>
+                        <td class="p-2.5 border border-slate-300 text-xs font-mono text-emerald-700 font-semibold">${a.waktuPulang || '-'}</td>
+                        <td class="p-2.5 border border-slate-300 text-xs"><span class="px-2 py-0.5 rounded text-[11px] font-bold ${a.status === 'Hadir' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}">${a.status}</span></td>
+                        <td class="p-2.5 border border-slate-300 text-xs text-slate-600">${a.keterangan || '-'}</td>
+                        <td class="p-2.5 border border-slate-300 text-center no-print">
+                            <button onclick="deleteAbsenRecord('${a.id}')" class="bg-red-50 hover:bg-red-100 text-red-600 p-1.5 rounded-lg transition" title="Hapus Record">
+                                <i class="fa-solid fa-trash text-xs"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            if (no === 1) {
+                tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-400 text-xs">Tidak ditemukan data piket pada tanggal tersebut.</td></tr>`;
+            }
+        }
+
+        function deleteAbsenRecord(id) {
+            if (confirm('Apakah Anda yakin ingin menghapus catatan absensi piket ini?')) {
+                if (window.db && window.dbRef && window.dbRemove) {
+                    window.dbRemove(window.dbRef(window.db, 'absensi/' + id))
+                        .then(() => showAlert('Informasi', 'Catatan absensi berhasil dihapus dari database.'))
+                        .catch(err => showAlert('Gagal', 'Gagal menghapus data dari Firebase.'));
+                }
+            }
+        }
+
+        function downloadPDF() {
+            const element = document.getElementById('pdf-printable-area');
+            const opt = {
+                margin:       8,
+                filename:     'Laporan_Absensi_Piket_Malam.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+            };
+            html2pdf().from(element).set(opt).save();
+        }
+
+        function exportExcel() {
+            const absenList = JSON.parse(localStorage.getItem(STORAGE_KEY_ABSEN)) || [];
+            const petugasList = JSON.parse(localStorage.getItem(STORAGE_KEY_PETUGAS)) || [];
+            
+            let csvContent = "data:text/csv;charset=utf-8,No,Nama Petugas,Tanggal,Pos,Waktu Masuk,Waktu Selesai,Status,Laporan Pos\n";
+            let rowNumber = 1;
+            
+            absenList.forEach((a) => {
+                const p = petugasList.find(x => String(x.id) === String(a.petugasId));
+                const namaPetugas = p ? p.nama : (a.nama || '-');
+
+                csvContent += `${rowNumber++},"${namaPetugas}",${a.tanggal},"${a.pos || 'Pos Utama'}",${a.waktu || '-'},${a.waktuPulang || '-'},${a.status},"${a.keterangan || '-'}"\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "rekap_absensi_piket_malam.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function renderAdminStatList() {
+            const list = JSON.parse(localStorage.getItem(STORAGE_KEY_PETUGAS)) || [];
+            const container = document.getElementById('admin-list-petugas-stat');
+            container.innerHTML = '';
+
+            list.forEach(p => {
+                container.innerHTML += `
+                    <button onclick="selectPetugasStat('${p.id}')" class="w-full text-left p-3 rounded-xl bg-slate-900/60 hover:bg-slate-700 transition border border-slate-700/60 flex items-center justify-between group">
+                        <div>
+                            <p class="font-bold text-xs text-white group-hover:text-amber-400">${p.nama}</p>
+                            <p class="text-[11px] text-slate-400">${p.pos}</p>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-xs text-slate-500 group-hover:text-amber-400"></i>
+                    </button>
+                `;
+            });
+        }
+
+        function selectPetugasStat(petugasId) {
+            const petugasList = JSON.parse(localStorage.getItem(STORAGE_KEY_PETUGAS)) || [];
+            const absenList = JSON.parse(localStorage.getItem(STORAGE_KEY_ABSEN)) || [];
+            const p = petugasList.find(x => String(x.id) === String(petugasId));
+            if (!p) return;
+
+            const myAbsen = absenList.filter(a => String(a.petugasId) === String(petugasId));
+
+            let hadir = 0, terlambat = 0, izin = 0;
+            myAbsen.forEach(a => {
+                if (a.status === 'Hadir') {
+                    if (a.keterangan && a.keterangan.includes('Terlambat')) terlambat++;
+                    else hadir++;
+                } else {
+                    izin++;
+                }
+            });
+
+            const total = myAbsen.length;
+            const persen = total > 0 ? Math.round(((hadir + terlambat) / total) * 100) : 0;
+
+            const detailContainer = document.getElementById('admin-detail-stat-content');
+            detailContainer.innerHTML = `
+                <div>
+                    <div class="flex items-center justify-between pb-4 border-b border-slate-700 mb-4">
+                        <div>
+                            <h4 class="text-base font-extrabold text-white">${p.nama}</h4>
+                            <p class="text-xs text-slate-400">ID / NIP: ${p.nip} | Pos Utama: ${p.pos}</p>
+                        </div>
+                        <span class="bg-amber-500 text-slate-950 text-xs px-3 py-1 rounded-full font-black">Total Piket: ${total} Shift</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 shadow-sm">
+                            <p class="text-xs text-slate-400 uppercase font-bold">Hadir Tepat Waktu</p>
+                            <h3 class="text-2xl font-black text-emerald-400 mt-1">${hadir}</h3>
+                        </div>
+                        <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 shadow-sm">
+                            <p class="text-xs text-slate-400 uppercase font-bold">Terlambat Shift</p>
+                            <h3 class="text-2xl font-black text-amber-400 mt-1">${terlambat}</h3>
+                        </div>
+                        <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 shadow-sm">
+                            <p class="text-xs text-slate-400 uppercase font-bold">Izin / Tukar Shift</p>
+                            <h3 class="text-2xl font-black text-blue-400 mt-1">${izin}</h3>
+                        </div>
+                        <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 shadow-sm">
+                            <p class="text-xs text-slate-400 uppercase font-bold">Kedisiplinan Piket</p>
+                            <h3 class="text-2xl font-black text-purple-400 mt-1">${persen}%</h3>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderAdminPetugasList() {
+            const list = JSON.parse(localStorage.getItem(STORAGE_KEY_PETUGAS)) || [];
+            const tbody = document.getElementById('table-admin-petugas');
+            tbody.innerHTML = '';
+
+            list.forEach((p, idx) => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-700/30">
+                        <td class="p-3 text-xs">${idx + 1}</td>
+                        <td class="p-3 text-xs font-bold text-white">${p.nama}</td>
+                        <td class="p-3 text-xs font-mono text-slate-300">${p.nip}</td>
+                        <td class="p-3 text-xs text-amber-400 font-medium">${p.pos}</td>
+                        <td class="p-3 text-center">
+                            <button onclick="deletePetugas('${p.id}')" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-1.5 rounded-lg border border-red-500/20 transition" title="Hapus Petugas"><i class="fa-solid fa-trash text-xs"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function openAddPetugasModal() {
+            document.getElementById('modal-tambah-petugas').classList.remove('hidden');
+        }
+
+        function closeAddPetugasModal() {
+            document.getElementById('modal-tambah-petugas').classList.add('hidden');
+            document.getElementById('new-petugas-nama').value = '';
+            document.getElementById('new-petugas-nip').value = '';
+            document.getElementById('new-petugas-pos').value = '';
+        }
+
+        function saveNewPetugas() {
+            const nama = document.getElementById('new-petugas-nama').value.trim();
+            const nip = document.getElementById('new-petugas-nip').value.trim();
+            const pos = document.getElementById('new-petugas-pos').value.trim();
+
+            if (!nama || !nip || !pos) {
+                showAlert('Peringatan', 'Semua kolom data petugas piket wajib diisi.');
+                return;
+            }
+
+            const newP = { id: 'p_' + Date.now(), nama, nip, pos };
+
+            if (window.db && window.dbRef && window.dbSet) {
+                window.dbSet(window.dbRef(window.db, 'petugas/' + newP.id), newP)
+                    .then(() => {
+                        closeAddPetugasModal();
+                        showAlert('Sukses', 'Data petugas piket baru berhasil disimpan.');
+                    })
+                    .catch(err => showAlert('Gagal', 'Gagal menyimpan ke Firebase.'));
+            }
+        }
+
+        function deletePetugas(id) {
+            if (confirm('Apakah Anda yakin ingin menghapus petugas ini?')) {
+                if (window.db && window.dbRef && window.dbRemove) {
+                    window.dbRemove(window.dbRef(window.db, 'petugas/' + id))
+                        .then(() => showAlert('Informasi', 'Data petugas berhasil dihapus dari database.'))
+                        .catch(err => showAlert('Gagal', 'Gagal menghapus data dari Firebase.'));
+                }
+            }
+        }
+
+        function saveKopSurat() {
+            let kopData = JSON.parse(localStorage.getItem(STORAGE_KEY_KOP)) || defaultKop;
+
+            kopData.instansi = document.getElementById('input-kop-instansi').value;
+            kopData.sekolah = document.getElementById('input-kop-sekolah').value;
+            kopData.alamat = document.getElementById('input-kop-alamat').value;
+            kopData.namaKepsek = document.getElementById('input-nama-kepsek').value;
+            kopData.nipKepsek = document.getElementById('input-nip-kepsek').value;
+            kopData.namaPengawas = document.getElementById('input-nama-pengawas').value;
+            kopData.nipPengawas = document.getElementById('input-nip-pengawas').value;
+            kopData.jamMasuk = document.getElementById('input-jam-masuk').value || '20:00';
+            kopData.toleransi = parseInt(document.getElementById('input-toleransi').value || 0, 10);
+            kopData.jamPulang = document.getElementById('input-jam-pulang').value || '06:00';
+
+            const fileSekolah = document.getElementById('input-logo-sekolah').files[0];
+            const fileTutwuri = document.getElementById('input-logo-tutwuri').files[0];
+
+            const promises = [];
+
+            if (fileSekolah) {
+                promises.push(new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => { kopData.logoSekolah = e.target.result; resolve(); };
+                    reader.readAsDataURL(fileSekolah);
+                }));
+            }
+
+            if (fileTutwuri) {
+                promises.push(new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => { kopData.logoTutwuri = e.target.result; resolve(); };
+                    reader.readAsDataURL(fileTutwuri);
+                }));
+            }
+
+            Promise.all(promises).then(() => {
+                if (window.db && window.dbRef && window.dbSet) {
+                    window.dbSet(window.dbRef(window.db, 'pengaturan'), kopData)
+                        .then(() => {
+                            showAlert('Sukses', 'Seluruh pengaturan piket berhasil diperbarui secara online!');
+                        })
+                        .catch(err => showAlert('Gagal', 'Gagal menyimpan pengaturan ke Firebase.'));
+                }
+            });
+        }
+
+        function removeLogo(type) {
+            let kopData = JSON.parse(localStorage.getItem(STORAGE_KEY_KOP)) || defaultKop;
+            if (type === 'sekolah') {
+                kopData.logoSekolah = '';
+                document.getElementById('input-logo-sekolah').value = '';
+            } else if (type === 'tutwuri') {
+                kopData.logoTutwuri = '';
+                document.getElementById('input-logo-tutwuri').value = '';
+            }
+            if (window.db && window.dbRef && window.dbSet) {
+                window.dbSet(window.dbRef(window.db, 'pengaturan'), kopData);
+            }
+        }
+
+        function showAlert(title, msg) {
+            document.getElementById('alert-title').innerText = title;
+            document.getElementById('alert-msg').innerText = msg;
+            document.getElementById('modal-alert').classList.remove('hidden');
+        }
+
+        function closeAlertModal() {
+            document.getElementById('modal-alert').classList.add('hidden');
+        }
+    </script>
+
+    <!-- FIREBASE SDK v10 INTEGRATION -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
+      import { getDatabase, ref, set, push, remove, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyAedNzLLWj2aSUteVHW3nnzoj2dWbGjx0s",
+        authDomain: "absensi-piket-malam-59405.firebaseapp.com",
+        databaseURL: "https://absensi-piket-malam-59405-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "absensi-piket-malam-59405",
+        storageBucket: "absensi-piket-malam-59405.firebasestorage.app",
+        messagingSenderId: "104606169447",
+        appId: "1:104606169447:web:3814a4f397c4f7ba3757c2",
+        measurementId: "G-6VVS46P9W4"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const analytics = getAnalytics(app);
+      const db = getDatabase(app);
+
+      window.db = db;
+      window.dbRef = ref;
+      window.dbSet = set;
+      window.dbPush = push;
+      window.dbRemove = remove;
+
+      // Realtime Listeners
+      onValue(ref(db, 'petugas'), (snapshot) => {
+        const data = snapshot.val();
+        const listPetugas = data ? Object.values(data) : [];
+        localStorage.setItem(STORAGE_KEY_PETUGAS, JSON.stringify(listPetugas));
+        populateLoginPetugasDropdown();
+        if (currentUser && currentUser.type === 'admin') renderAdminPetugasList();
+      });
+
+      onValue(ref(db, 'absensi'), (snapshot) => {
+        const data = snapshot.val();
+        const listAbsen = data ? Object.values(data) : [];
+        localStorage.setItem(STORAGE_KEY_ABSEN, JSON.stringify(listAbsen));
+        if (currentUser && currentUser.type === 'petugas') renderPetugasDashboard();
+        if (currentUser && currentUser.type === 'admin') renderAdminRekap();
+      });
+
+      onValue(ref(db, 'pengaturan'), (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          localStorage.setItem(STORAGE_KEY_KOP, JSON.stringify(data));
+          loadKopHeader();
+        }
+      });
+    </script>
+</body>
+</html>
